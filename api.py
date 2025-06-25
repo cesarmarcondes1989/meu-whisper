@@ -3,7 +3,9 @@ import whisper
 import os
 
 model = whisper.load_model("base")
-app = FastAPI()
+
+# Aqui está o segredo:
+app = FastAPI(root_path="/whisper")
 
 @app.post("/transcribe")
 async def transcribe(file: UploadFile = File(...)):
