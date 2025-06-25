@@ -2,10 +2,7 @@ from fastapi import FastAPI, File, UploadFile
 import whisper
 import os
 
-# Define o app com o prefixo correto
-app = FastAPI(root_path="/whisper")
-
-# Carrega o modelo base do Whisper
+app = FastAPI()
 model = whisper.load_model("base")
 
 @app.post("/transcribe")
