@@ -2,9 +2,9 @@ FROM python:3.10-slim
 
 RUN apt-get update && apt-get install -y ffmpeg git && apt-get clean
 
-# Corrige o erro de hash do torch
+# Usa cache e aumenta resiliência da instalação
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir git+https://github.com/openai/whisper.git --trusted-host pypi.org --trusted-host files.pythonhosted.org
+    pip install git+https://github.com/openai/whisper.git --trusted-host pypi.org --trusted-host files.pythonhosted.org --timeout=60 --retries=5
 
 RUN pip install fastapi uvicorn python-multipart
 
