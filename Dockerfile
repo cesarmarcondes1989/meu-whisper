@@ -12,3 +12,4 @@ RUN pip install fastapi uvicorn python-multipart
 EXPOSE 7860
 
 CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "7860"]
+
