@@ -1,3 +1,23 @@
+from fastapi import FastAPI, File, UploadFile
+import whisper
+import os
+
+app = FastAPI()
+model = None
+
+@app.on_event("startup")
+def load_model():
+    global model
+    model = whisper.load_model("base")
+
+def is_transcription_bad(text):
+    # Critério simples: muito curto, vazio ou contém token de erro
+    if not text or len(text.strip()) < 5:
+        return True
+    if "<|unk|>" in text:
+        return True
+    return False
+
 @app.post("/transcribe/smart")
 async def smart_transcribe(file: UploadFile = File(...)):
     filename = f"temp_audio.{file.filename.split('.')[-1]}"
@@ -18,12 +38,11 @@ async def smart_transcribe(file: UploadFile = File(...)):
             result_pt = model.transcribe(filename, language="pt")
             text_pt = result_pt["text"]
 
-            # Decide qual é a menos ruim (você pode sofisticar esse critério)
             if not is_transcription_bad(text_pt):
                 transcricao = text_pt
                 idioma = "pt"
             else:
-                transcricao = text_auto  # ou text_en/text_pt, pode escolher pelo maior texto, etc.
+                transcricao = text_auto
                 idioma = "indefinido"
         else:
             transcricao = text_en
