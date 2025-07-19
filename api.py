@@ -2,10 +2,8 @@ from fastapi import FastAPI, File, UploadFile
 import whisper
 import os
 
-# Inicializa o app FastAPI
 app = FastAPI()
 
-# Carrega o modelo dentro de uma função "startup"
 model = None
 
 @app.on_event("startup")
@@ -17,12 +15,20 @@ def load_model():
 def root():
     return {"message": "API do Whisper está rodando!"}
 
-@app.post("/transcribe")
-async def transcribe(file: UploadFile = File(...)):
+@app.post("/transcribe/{language}")
+async def transcribe(
+    language: str,
+    file: UploadFile = File(...)
+):
+    # Gera nome temporário para o arquivo recebido
     filename = f"temp_audio.{file.filename.split('.')[-1]}"
     with open(filename, "wb") as f:
         f.write(await file.read())
 
-    result = model.transcribe(filename)
+    # Faz a transcrição com o idioma definido na URL
+    result = model.transcribe(filename, language=language)
+
+    # Remove o arquivo temporário
     os.remove(filename)
+
     return {"text": result["text"]}
