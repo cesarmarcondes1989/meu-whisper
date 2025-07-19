@@ -1,34 +1,39 @@
-from fastapi import FastAPI, File, UploadFile
-import whisper
-import os
-
-app = FastAPI()
-
-model = None
-
-@app.on_event("startup")
-def load_model():
-    global model
-    model = whisper.load_model("base")
-
-@app.get("/")
-def root():
-    return {"message": "API do Whisper está rodando!"}
-
-@app.post("/transcribe/{language}")
-async def transcribe(
-    language: str,
-    file: UploadFile = File(...)
-):
-    # Gera nome temporário para o arquivo recebido
+@app.post("/transcribe/smart")
+async def smart_transcribe(file: UploadFile = File(...)):
     filename = f"temp_audio.{file.filename.split('.')[-1]}"
     with open(filename, "wb") as f:
         f.write(await file.read())
 
-    # Faz a transcrição com o idioma definido na URL
-    result = model.transcribe(filename, language=language)
+    # 1. Tenta autodetect
+    result_auto = model.transcribe(filename)
+    text_auto = result_auto["text"]
 
-    # Remove o arquivo temporário
+    # 2. Se ruim, tenta inglês
+    if is_transcription_bad(text_auto):
+        result_en = model.transcribe(filename, language="en")
+        text_en = result_en["text"]
+
+        # 3. Se inglês também for ruim, tenta português
+        if is_transcription_bad(text_en):
+            result_pt = model.transcribe(filename, language="pt")
+            text_pt = result_pt["text"]
+
+            # Decide qual é a menos ruim (você pode sofisticar esse critério)
+            if not is_transcription_bad(text_pt):
+                transcricao = text_pt
+                idioma = "pt"
+            else:
+                transcricao = text_auto  # ou text_en/text_pt, pode escolher pelo maior texto, etc.
+                idioma = "indefinido"
+        else:
+            transcricao = text_en
+            idioma = "en"
+    else:
+        transcricao = text_auto
+        idioma = result_auto.get("language", "auto")
+
     os.remove(filename)
-
-    return {"text": result["text"]}
+    return {
+        "text": transcricao,
+        "idioma_final": idioma
+    }
